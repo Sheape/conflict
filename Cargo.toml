@@ -2,5 +2,10 @@
 name = "conflict"
 version = "0.1.0"
 edition = "2024"
+authors = ["Paul Pare <paulpare@protonmail.com>"]
+description = "A CLI tool that detects cargo dependency conflicts."
+repository = "https://github.com/Sheape/conflict"
+documentation = "https://docs.rs/conflict"
+license = "MIT"
 
 [dependencies]
