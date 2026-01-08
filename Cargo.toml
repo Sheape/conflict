@@ -8,4 +8,13 @@ repository = "https://github.com/Sheape/conflict"
 documentation = "https://docs.rs/conflict"
 license = "MIT"
 
+[lints.rust]
+unsafe_code = "forbid"
+unused = { level = "allow", priority = -1 }
+
 [dependencies]
+clap = { version = "4.5.54", features = ["derive"] }
+guppy = "0.17.24"
+semver = "1.0.27"
+serde = "1.0.228"
+toml = "0.9.10"
