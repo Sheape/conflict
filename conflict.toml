@@ -1,27 +1,23 @@
-[labels.native_tls]
+[groups.native_tls]
 members = ["hyper-tls", "native-tls-crate", "tokio-native-tls"]
-categories = ["tls"]
 
-[labels.rustls]
+[groups.rustls]
 members = ["hyper-rustls", "rustls", "tokio-rustls", "openssl-sys"]
-categories = ["tls"]
 
-[labels.openssl]
+[groups.openssl]
 members = ["openssl-sys", "native-tls"]
-categories = ["ssl-provider"]
 
-[labels.boring]
+[groups.boring]
 members = ["boring-sys2", "boring2"]
-categories = ["ssl-provider"]
 
-[[rules]]
-name = "TLS Capability"
-type = "exactly_one_of"
-targets = ["tls"]
-fix_hint = "Exactly one of native TLS or rustls must be used as TLS provider."
+# [[rules]]
+# name = "TLS Capability"
+# type = "exactly_one_of"
+# targets = ["native_tls", "rustls"]
+# fix_hint = "Exactly one of native TLS or rustls must be used as TLS provider."
 
 [[rules]]
 name = "SSL Provider"
 type = "exactly_one_of"
-targets = ["ssl-provider"]
-fix_hint = "Strictly one of OpenSSL or BoringSSL can only be used."
+targets = ["openssl", "boring"]
+fix_hint = "Exactly one of SSL providers must be used. Remove either openssl or boring."

@@ -3,10 +3,12 @@ use std::collections::HashMap;
 use guppy::{PackageId, Version};
 use serde::Deserialize;
 
+pub type GroupIndex = HashMap<String, Vec<Dependency>>;
+pub type DependencyIndex = HashMap<String, DependencyProp>;
+
 #[derive(Debug, Deserialize)]
-pub struct Label {
+pub struct Group {
     pub members: Vec<String>,
-    pub categories: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -20,7 +22,7 @@ pub struct Rule {
 
 #[derive(Debug, Deserialize)]
 pub struct Ruleset {
-    pub labels: HashMap<String, Label>,
+    pub groups: HashMap<String, Group>,
     pub rules: Vec<Rule>,
 }
 
@@ -32,24 +34,26 @@ pub enum RuleType {
     AtleastOneOf,
 }
 
-#[derive(Debug)]
-pub struct DependencyIndex {
-    pub deps: HashMap<String, DependencyProp>,
-}
-
-impl DependencyIndex {
-    pub fn new() -> Self {
-        Self {
-            deps: HashMap::new(),
-        }
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DependencyProp {
     pub ids: Vec<PackageId>,
     pub versions: Vec<Version>,
     pub groups: Vec<String>,
+}
+
+#[derive(Debug)]
+pub struct Dependency {
+    pub name: String,
+    pub properties: DependencyProp,
+}
+
+impl Dependency {
+    pub fn new(name: impl Into<String>, properties: DependencyProp) -> Self {
+        Self {
+            name: name.into(),
+            properties,
+        }
+    }
 }
 
 impl DependencyProp {
