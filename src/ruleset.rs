@@ -18,6 +18,7 @@ pub struct Rule {
     pub _type: RuleType,
     pub targets: Vec<String>,
     pub fix_hint: String,
+    pub severity: String,
 }
 
 #[derive(Debug, Deserialize)]

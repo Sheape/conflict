@@ -20,4 +20,5 @@ members = ["boring-sys2", "boring2"]
 name = "SSL Provider"
 type = "exactly_one_of"
 targets = ["openssl", "boring"]
+severity = "fatal"
 fix_hint = "Exactly one of SSL providers must be used. Remove either openssl or boring."

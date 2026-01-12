@@ -1,26 +1,37 @@
 use std::{collections::HashMap, error::Error, fs::read_to_string, path::Path};
 
+use clap::Parser;
 use guppy::{MetadataCommand, PackageId};
 
 mod cli;
 mod ruleset;
 
+use cli::Cli;
 use ruleset::{Dependency, DependencyProp, Ruleset};
 
 use crate::ruleset::{DependencyIndex, GroupIndex, RuleType};
 
-const RULESET_FILE: &str = "./conflict.toml";
-const CARGO_MANIFEST_PATH: &str = "/home/sheape/code/surfql/Cargo.toml";
-
 fn main() -> Result<(), Box<dyn Error>> {
-    let input_path = Path::new(RULESET_FILE);
-    let input = read_to_string(input_path)?;
-    let ruleset: Ruleset = toml::from_str(&input)?;
-    println!("{ruleset:?}");
+    let cli = Cli::parse();
 
     let mut cmd = MetadataCommand::new();
-    cmd.manifest_path(CARGO_MANIFEST_PATH);
+    if let Some(dir) = &cli.workspace {
+        cmd.current_dir(dir);
+    }
     let graph = cmd.build_graph()?;
+
+    let root_dir = graph.workspace().root();
+
+    let ruleset: Ruleset = {
+        let ruleset_file = &cli
+            .ruleset_file
+            .unwrap_or(format!("{root_dir}/conflict.toml"));
+        let ruleset_path = Path::new(ruleset_file);
+        let input = read_to_string(ruleset_path)?;
+        toml::from_str(&input)?
+    };
+
+    println!("{ruleset:?}");
 
     //println!("{:?}", graph.package_count());
 
