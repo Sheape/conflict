@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
-use guppy::{PackageId, Version};
+use guppy::{PackageId, Version, graph::PackageMetadata};
 use serde::Deserialize;
 
-pub type GroupIndex = HashMap<String, Vec<Dependency>>;
-pub type DependencyIndex = HashMap<String, DependencyProp>;
+pub type GroupIndex<'g> = HashMap<String, Vec<Dependency<'g>>>;
+pub type DependencyIndex<'g> = HashMap<String, DependencyProp<'g>>;
+type RuleId = String;
 
 #[derive(Debug, Deserialize)]
 pub struct Group {
@@ -13,12 +14,16 @@ pub struct Group {
 
 #[derive(Debug, Deserialize)]
 pub struct Rule {
+    pub id: RuleId,
     pub name: String,
     #[serde(rename = "type")]
     pub _type: RuleType,
     pub targets: Vec<String>,
-    pub fix_hint: String,
-    pub severity: String,
+    pub severity: RuleSeverity,
+    pub reason: String,
+    pub scope: RuleScope,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub suggestion: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -30,26 +35,43 @@ pub struct Ruleset {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RuleType {
-    ExactlyOneOf,
-    NoneOrOneOf,
-    AtleastOneOf,
+    OneOf,
+    AtLeastOne,
+    AtMostOne,
+    Requires,
+    Forbids,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RuleScope {
+    All,
+    Direct,
+    Transitive,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RuleSeverity {
+    Fatal,
+    Warning,
+    Info,
 }
 
 #[derive(Debug, Clone)]
-pub struct DependencyProp {
-    pub ids: Vec<PackageId>,
-    pub versions: Vec<Version>,
+pub struct DependencyProp<'g> {
+    pub packages: Vec<PackageMetadata<'g>>,
     pub groups: Vec<String>,
 }
 
 #[derive(Debug)]
-pub struct Dependency {
+pub struct Dependency<'g> {
     pub name: String,
-    pub properties: DependencyProp,
+    pub properties: DependencyProp<'g>,
 }
 
-impl Dependency {
-    pub fn new(name: impl Into<String>, properties: DependencyProp) -> Self {
+impl<'g> Dependency<'g> {
+    pub fn new(name: impl Into<String>, properties: DependencyProp<'g>) -> Self {
         Self {
             name: name.into(),
             properties,
@@ -57,11 +79,10 @@ impl Dependency {
     }
 }
 
-impl DependencyProp {
+impl DependencyProp<'_> {
     pub fn new<T: Into<String>>(group: T) -> Self {
         Self {
-            ids: vec![],
-            versions: vec![],
+            packages: vec![],
             groups: vec![group.into()],
         }
     }

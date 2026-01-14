@@ -10,15 +10,18 @@ members = ["openssl-sys", "native-tls"]
 [groups.boring]
 members = ["boring-sys2", "boring2"]
 
+[[rules]]
+id = "SSL001"
+name = "SSL Provider"
+type = "one_of"
+targets = ["openssl", "boring"]
+severity = "fatal"
+reason = "Exactly one of SSL providers must be used."
+suggestion = "Remove either openssl or boring."
+scope = "all"
+
 # [[rules]]
 # name = "TLS Capability"
 # type = "exactly_one_of"
 # targets = ["native_tls", "rustls"]
-# fix_hint = "Exactly one of native TLS or rustls must be used as TLS provider."
-
-[[rules]]
-name = "SSL Provider"
-type = "exactly_one_of"
-targets = ["openssl", "boring"]
-severity = "fatal"
-fix_hint = "Exactly one of SSL providers must be used. Remove either openssl or boring."
+# reason = "Exactly one of native TLS or rustls must be used as TLS provider."
