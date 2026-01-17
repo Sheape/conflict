@@ -1,10 +1,11 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use guppy::{PackageId, Version, graph::PackageMetadata};
 use serde::Deserialize;
 
 pub type GroupIndex<'g> = HashMap<String, Vec<Dependency<'g>>>;
 pub type DependencyIndex<'g> = HashMap<String, DependencyProp<'g>>;
+pub type AdjacencyMap = HashMap<Package, HashSet<Package>>;
 type RuleId = String;
 
 #[derive(Debug, Deserialize)]
@@ -89,5 +90,33 @@ impl DependencyProp<'_> {
 
     pub fn insert_group(&mut self, group: impl Into<String>) {
         self.groups.push(group.into());
+    }
+}
+
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+pub struct Package {
+    pub id: PackageId,
+    pub span_in_manifest: Option<(usize, usize)>,
+}
+
+impl Package {
+    pub fn new(id: PackageId, span_in_manifest: Option<(usize, usize)>) -> Self {
+        Self {
+            id,
+            span_in_manifest,
+        }
+    }
+}
+
+#[derive(PartialEq)]
+pub enum RuleState {
+    NoConflict,
+    Conflict,
+    NoGroupFound,
+}
+
+impl RuleState {
+    pub fn is_conflict(self) -> bool {
+        self == Self::Conflict
     }
 }
