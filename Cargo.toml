@@ -1,6 +1,6 @@
 [package]
 name = "conflict"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 authors = ["Paul Pare <paulpare@protonmail.com>"]
 description = "A CLI tool that detects cargo dependency conflicts."
