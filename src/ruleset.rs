@@ -3,15 +3,11 @@ use std::collections::{HashMap, HashSet};
 use guppy::{PackageId, Version, graph::PackageMetadata};
 use serde::Deserialize;
 
-pub type GroupIndex<'g> = HashMap<String, Vec<Dependency<'g>>>;
-pub type DependencyIndex<'g> = HashMap<String, DependencyProp<'g>>;
+use crate::dependency::Package;
+use crate::group::Group;
+
 pub type AdjacencyMap = HashMap<Package, HashSet<Package>>;
 type RuleId = String;
-
-#[derive(Debug, Deserialize)]
-pub struct Group {
-    pub members: Vec<String>,
-}
 
 #[derive(Debug, Deserialize)]
 pub struct Rule {
@@ -57,55 +53,6 @@ pub enum RuleSeverity {
     Fatal,
     Warning,
     Info,
-}
-
-#[derive(Debug, Clone)]
-pub struct DependencyProp<'g> {
-    pub packages: Vec<PackageMetadata<'g>>,
-    pub groups: Vec<String>,
-}
-
-#[derive(Debug)]
-pub struct Dependency<'g> {
-    pub name: String,
-    pub properties: DependencyProp<'g>,
-}
-
-impl<'g> Dependency<'g> {
-    pub fn new(name: impl Into<String>, properties: DependencyProp<'g>) -> Self {
-        Self {
-            name: name.into(),
-            properties,
-        }
-    }
-}
-
-impl DependencyProp<'_> {
-    pub fn new<T: Into<String>>(group: T) -> Self {
-        Self {
-            packages: vec![],
-            groups: vec![group.into()],
-        }
-    }
-
-    pub fn insert_group(&mut self, group: impl Into<String>) {
-        self.groups.push(group.into());
-    }
-}
-
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub struct Package {
-    pub id: PackageId,
-    pub span_in_manifest: Option<(usize, usize)>,
-}
-
-impl Package {
-    pub fn new(id: PackageId, span_in_manifest: Option<(usize, usize)>) -> Self {
-        Self {
-            id,
-            span_in_manifest,
-        }
-    }
 }
 
 #[derive(PartialEq)]

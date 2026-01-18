@@ -1,3 +1,4 @@
+use rayon::prelude::*;
 use std::{
     collections::{HashMap, HashSet},
     fs::read_to_string,
@@ -11,19 +12,24 @@ use guppy::{
 };
 
 mod cli;
+mod dependency;
+mod engine;
 mod error;
+mod group;
 mod ruleset;
 
 use cli::Cli;
 use miette::{NamedSource, SourceOffset, SourceSpan};
 use owo_colors::{OwoColorize, Style};
-use ruleset::{Dependency, DependencyProp, Package, Ruleset};
+use ruleset::Ruleset;
 use termtree::Tree;
 use toml_edit::{Document, Item};
 
 use crate::{
+    dependency::{Dependency, DependencyIndex, DependencyProperty, Package},
     error::{Error, SslProviderConflict},
-    ruleset::{AdjacencyMap, DependencyIndex, GroupIndex, RuleState, RuleType},
+    group::GroupIndex,
+    ruleset::{AdjacencyMap, RuleState, RuleType},
 };
 
 fn manifest_contains_dep(manifest: &Document<String>, name: &str) -> Option<(usize, usize)> {
@@ -144,39 +150,37 @@ fn main() -> miette::Result<()> {
 
     println!("{ruleset:?}");
 
-    //println!("{:?}", graph.package_count());
-
     let mut deps_index = DependencyIndex::new();
 
-    for (group_name, group) in ruleset.groups {
-        group.members.into_iter().for_each(|pkg| {
+    ruleset.groups.par_iter().for_each(|(group_name, group)| {
+        group.members.iter().for_each(|pkg| {
             deps_index
-                .entry(pkg)
-                .and_modify(|dep| dep.insert_group(&group_name))
-                .or_insert_with(|| DependencyProp::new(&group_name));
+                .entry(pkg.clone())
+                .and_modify(|dep| dep.insert_group(group_name))
+                .or_insert_with(|| DependencyProperty::new(group_name));
         });
-    }
+    });
 
     for pkg in graph.packages() {
         deps_index.entry(pkg.name().to_string()).and_modify(|dep| {
-            dep.packages.push(pkg);
+            dep.package_ids.push(pkg.id().clone());
         });
     }
 
-    deps_index.retain(|_, v| !v.packages.is_empty());
+    deps_index.retain(|_, v| !v.package_ids.is_empty());
+    //dbg!(&deps_index);
 
     let mut groups_index = GroupIndex::new();
 
-    for (name, props) in deps_index.iter() {
+    deps_index.par_iter().for_each(|ref_multi| {
+        let (name, props) = ref_multi.pair();
         props.groups.clone().into_iter().for_each(|group| {
             groups_index
                 .entry(group)
                 .and_modify(|grp| grp.push(Dependency::new(name.clone(), props.clone())))
                 .or_insert_with(|| vec![Dependency::new(name.clone(), props.clone())]);
         });
-    }
-
-    //println!("{groups_index:?}");
+    });
 
     // Parse the rules
     for rule in ruleset.rules {
@@ -196,8 +200,8 @@ fn main() -> miette::Result<()> {
 
                         for dep in groups_index.get(group).unwrap().iter() {
                             let mut adj_map = AdjacencyMap::new();
-                            for pkg in dep.properties.packages.iter() {
-                                for link in pkg.reverse_direct_links() {
+                            for pkg_id in dep.properties.package_ids.iter() {
+                                for link in graph.metadata(pkg_id).unwrap().reverse_direct_links() {
                                     reverse_bfs(&cargo_manifest.document, link, &mut adj_map);
                                 }
                             }
